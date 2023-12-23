@@ -28,14 +28,26 @@ const dbConnect = async () => {
       .db("taskDB")
       .collection("tasks");
 
+    const userCollection = client
+      .db("userDB")
+      .collection("users");
+
 
     app.get("/task", async (req, res) => {
       const query = {};
-      const status = req.query.status;
-      if (status) {
-              query.status = status
-            }
-      const courser = taskCollection.find(query);
+      const sortObj = {};
+
+      const sortField = req.query.sortField;
+      const sortOrder = req.query.sortOrder;
+
+      if (sortField && sortOrder) {
+        sortObj[sortField] = sortOrder
+      }
+      const email = req.query.email;
+      if (email) {
+        query.email = email
+      }
+      const courser = taskCollection.find(query).sort(sortObj);
       const result = await courser.toArray();
       res.send(result);
     });
@@ -51,6 +63,18 @@ const dbConnect = async () => {
       const newTask = req.body;
       console.log("new Task :", newTask);
       const result = await taskCollection.insertOne(newTask);
+      res.send(result);
+    });
+
+    app.post("/user", async (req, res) => {
+      const newUser = req.body;
+      console.log("new user :", newUser);
+      const query = { email: newUser.email }
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: 'user already exists', insertedId: null })
+      }
+      const result = await userCollection.insertOne(newUser);
       res.send(result);
     });
 
